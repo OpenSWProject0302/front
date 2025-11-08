@@ -1,0 +1,84 @@
+.genre-card {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  width: 200px;
+  height: 270px;
+  padding: 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.genre-card:hover {
+  transform: scale(1.05);
+}
+.genre-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+.genre-title {
+  font-weight: 500;
+  margin: 0.5rem 0;
+}
+
+.mp3-icon {
+  display: flex;
+  gap: 28px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+  margin-top: 25px;
+}
+
+.icon-btn {
+  width: 24px;   
+  height: 24px;
+  object-fit: contain;
+}
+
+.play-bar {
+  position: relative;
+  width: 200px;
+  height: 8px;            /* 동그라미가 겹칠 수 있도록 살짝 높게 */
+  margin: 10px auto;
+}
+
+/* 검정 바 (전체 길이) */
+.whole-bar {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: #000;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+/* 하늘색 진행 바 */
+.now-play {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 65%;             /* 진행 정도 비율 */
+  height: 3px;
+  background-color: #C2DAEF;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  z-index: 1;             /* 검정 바보다 위로 */
+}
+
+/* 원형 재생점 */
+.now-play-circle {
+  position: absolute;
+  top: 50%;
+  left: 65%;              /* now-play의 width와 동일하게 맞추면 끝점에 위치 */
+  width: 6px;
+  height: 6px;
+  background-color: #758DA3;
+  border-radius: 50%;
+  transform: translate(-50%, -50%); /* 정확히 선 중앙에 걸치게 */
+  z-index: 2;             /* 모든 선보다 위 */
+}
