@@ -63,7 +63,7 @@
   top: 50%;
   left: 0;
   width: 65%;             /* 진행 정도 비율 */
-  height: 3px;
+  height: 4px;
   background-color: #C2DAEF;
   border-radius: 2px;
   transform: translateY(-50%);

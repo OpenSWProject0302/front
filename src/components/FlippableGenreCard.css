@@ -1,0 +1,89 @@
+/* 카드와 앞/뒤면 공통 */
+.flip-card {
+  width: 230px;           /* 앞면 카드와 동일한 너비로 맞추세요 */
+  height: 300px;
+  perspective: 1200px;
+}
+.flip-inner { 
+    position: relative; 
+    width: 100%; 
+    height: 100%;
+    transition: transform 380ms ease; 
+    transform-style: preserve-3d; }
+
+.flip-card.is-flipped .flip-inner { 
+    transform: rotateY(180deg); 
+}
+
+.flip-face { 
+    position: absolute; 
+    inset: 0; 
+    backface-visibility: hidden; 
+    border-radius: .5rem; 
+}
+
+/* 뒷면: 폼을 정확히 중앙에 */
+.flip-back {
+  transform: rotateY(180deg);
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(0,0,0,.15);
+  padding: 12px;
+  display: flex;
+  align-items: center;           /* 수직 중앙 */
+  justify-content: center;       /* 수평 중앙 */
+}
+
+.flip-front { 
+  overflow: visible;        /* 앞면은 넘쳐도 보이게 */
+}
+
+
+/* ---- OptionsForm ---- */
+.options-wrap {
+  /* 폼 전체 박스를 카드 중앙에 고정 */
+  width: 88%;                    /* 80~92% 선호값, 카드 안에 여백 생김 */
+  max-width: 230px;              /* (선택) 너무 넓어지지 않게 */
+  margin: 0 auto;                /* 수평 중앙 */
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;          /* 각 입력이 컨테이너 폭을 채우도록 */
+}
+
+.options-title {
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 20px;
+  margin-top: -15px;
+  align-self: center;            /* 제목만 중앙 */
+}
+
+.options-label { color: #334155; font-weight: 600; }
+
+/* 모든 입력/셀렉트/파일을 동일 폭으로 */
+.options-input,
+.options-wrap input[type="file"],
+.options-wrap select,
+.options-wrap input[type="number"],
+.options-wrap input[type="text"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12px;
+  box-sizing: border-box;        /* 폭 계산 안정화 */
+}
+
+/* 버튼도 중앙 정렬 */
+.options-actions {
+  display: flex;
+  justify-content: center;       /* 가운데 배치 */
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn { padding: 6px 10px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; }
+.btn.primary { background:#758DA3; color:#fff; }
+.btn.ghost { background:#f1f5f9; color:#758DA3; }
