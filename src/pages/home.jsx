@@ -4,10 +4,16 @@ import ImgDefault from "../image/genre_default.png";
 
 export default function Home() {
   const genres = [
-    { id: 1, title: "장르", image: ImgDefault },
-    { id: 2, title: "발라드", image: ImgDefault },
-    { id: 3, title: "블루스", image: ImgDefault },
-    // …필요만큼 추가
+    { id: 1, title: "Ballad", image: ImgDefault },
+    { id: 2, title: "Blues", image: ImgDefault },
+    { id: 3, title: "Jazz", image: ImgDefault },
+    { id: 4, title: "R&B", image: ImgDefault },
+    { id: 5, title: "Funk", image: ImgDefault },
+    { id: 6, title: "Rock", image: ImgDefault },
+    { id: 7, title: "Disco", image: ImgDefault },
+    { id: 8, title: "Reggae", image: ImgDefault },
+    { id: 9, title: "Latin", image: ImgDefault },
+    // …필요만큼 추가 
   ];
 
   return (
