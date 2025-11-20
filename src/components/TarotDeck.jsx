@@ -1,149 +1,209 @@
 // src/components/TarotDeck.jsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import FlippableGenreCard from "./FlippableGenreCard";
 import "./TarotDeck.css";
 import { presignUpload, putToS3 } from "../api/uploads";
+// ❌ 이제 processDrums 는 사용하지 않음
+// import { processDrums } from "../api/drums";
 
 export default function TarotDeck({ items = [], onSelect }) {
-    const [active, setActive] = useState(0);     // 중앙 카드 index
-    const [flipped, setFlipped] = useState(false); // 단 하나만 뒤집힘
-    const wrapRef = useRef(null);
+  const [active, setActive] = useState(0);          // 중앙 카드 index
+  const [flipped, setFlipped] = useState(false);    // 단 하나만 뒤집힘
+  const wrapRef = useRef(null);
 
-    const [busy, setBusy] = useState(false);
-    //   const [progress, setProgress] = useState(0); // (선택) 진행률 UI 쓰려면
+  const [busy, setBusy] = useState(false);
+  // const [progress, setProgress] = useState(0);
 
-    const count = items.length;
-    const wrap = (i) => ((i % count) + count) % count;
+  const count = items.length;
 
-    const focusTo = (i) => {
-        setActive(wrap(i));
-        setFlipped(false); // 포커스 이동 시 항상 앞면으로
-    };
+  // index 순환
+  const wrap = useCallback((i) => ((i % count) + count) % count, [count]);
 
-    const prev = () => focusTo(active - 1);
-    const next = () => focusTo(active + 1);
+  const focusTo = useCallback(
+    (i) => {
+      setActive(wrap(i));
+      setFlipped(false); // 포커스 이동 시 항상 앞면으로
+    },
+    [wrap]
+  );
 
-    async function handleStartFromForm(form) {
-        try {
-            if (!form.file) throw new Error("파일을 선택해 주세요.");
-            setBusy(true);
+  const prev = useCallback(() => focusTo(active - 1), [focusTo, active]);
+  const next = useCallback(() => focusTo(active + 1), [focusTo, active]);
 
-            // 1) presign
-            const { ok, uploadUrl, key /*, expiresIn*/ } = await presignUpload({
-                filename: form.file.name,
-                size: form.file.size,
-                contentType: form.file.type,
-            });
-            if (!ok) throw new Error("presign 발급 실패");
+  // ✅ 2번 + 3번 API까지 모두 처리하는 함수
+  async function handleStartFromForm(form) {
+    try {
+      if (!form.file) throw new Error("파일을 선택해 주세요.");
+      setBusy(true);
 
-            // 2) S3 업로드
-            await putToS3({ uploadUrl, file: form.file });
-            // (선택) 진행률 버전: await putToS3WithProgress({ uploadUrl, file: form.file, onProgress:setProgress });
+      // MIME 타입 보정
+      let fileType = form.file.type;
+      if (!fileType && form.file.name.toLowerCase().endsWith(".wav")) {
+        fileType = "audio/wav";
+      }
 
-            // 3) 여기서 'key'를 들고 다음 Job 생성 API를 호출하면 됨.
-            //    아직 백엔드 미구현이면 key만 콘솔에 보관.
-            console.log("S3 업로드 완료. key:", key);
+      // 1) presign 발급
+      const { ok, uploadUrl, key /* expiresIn */ } = await presignUpload({
+        filename: form.file.name,
+        size: form.file.size,
+        contentType: fileType,
+      });
+      if (!ok) throw new Error("presign 발급 실패");
 
-            // 상위로 알려주고(선택) 뒤집기 닫기
-            onSelect?.({ ...form, inputKey: key });
-            setFlipped(false);
-            alert("업로드 완료! (key 콘솔 확인)");
-        } catch (e) {
-            console.error(e);
-            alert(e.message || "업로드 실패");
-        } finally {
-            setBusy(false);
-            //   setProgress(0);
-        }
+      // 2) S3 업로드
+      await putToS3({ uploadUrl, file: form.file, contentType: fileType });
+      console.log("S3 업로드 완료. key:", key);
+
+      // 3) 드럼 파이프라인 실행 (/api/drums/process)
+      //    폼 안에 들어온 값 기준으로 매핑
+      const genre =
+        form.genre || form.title || form.genreName || "Rock";
+      const tempo = Number(form.bpm) || 160;
+      const level = form.difficulty || "Normal"; // "Easy" | "Normal" | "Hard"
+
+      console.log("drums/process 요청 payload:", {
+        inputKey: key,
+        genre,
+        tempo,
+        level,
+      });
+
+      // 🔥 콘솔에서 테스트했던 방식 그대로 사용
+      const res = await fetch("http://127.0.0.1:8000/api/drums/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          inputKey: key,
+          genre,
+          tempo,
+          level,
+        }),
+      });
+
+      const data = await res.json().catch(async () => {
+        const txt = await res.text();
+        throw new Error(`응답 JSON 파싱 실패: ${txt}`);
+      });
+
+      if (!res.ok || data.ok === false) {
+        console.error("drums/process 실패 응답:", data);
+        throw new Error(data.message || "드럼 변환 중 오류가 발생했습니다.");
+      }
+
+      console.log("=== DRUM PROCESS RESULT ===");
+      console.log(data);
+
+      // 부모로 응답 전달하고 싶으면 여기서 넘겨줌
+      onSelect?.({ ...form, inputKey: key, job: data });
+
+      setFlipped(false);
+      alert("업로드 및 변환 요청이 완료되었습니다!");
+    } catch (e) {
+      console.error(e);
+      alert(e.message || "업로드/변환 중 오류가 발생했습니다.");
+    } finally {
+      setBusy(false);
+      // setProgress(0);
     }
+  }
 
-    // 키보드
-    useEffect(() => {
-        const onKey = (e) => {
-            if (e.key === "ArrowLeft") prev();
-            if (e.key === "ArrowRight") next();
-            if (e.key === "Escape") setFlipped(false);
-        };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [active, count]);
+  // 키보드
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+      if (e.key === "Escape") setFlipped(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [prev, next]);
 
-    // 휠/스와이프
-    useEffect(() => {
-        const el = wrapRef.current;
-        if (!el) return;
-        const onWheel = (e) => {
-            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) (e.deltaX > 0 ? next() : prev());
-        };
-        el.addEventListener("wheel", onWheel, { passive: true });
-        return () => el.removeEventListener("wheel", onWheel);
-    }, [active, count]);
+  // 휠
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) (e.deltaX > 0 ? next() : prev());
+    };
+    el.addEventListener("wheel", onWheel, { passive: true });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [prev, next]);
 
-    useEffect(() => {
-        const el = wrapRef.current;
-        if (!el) return;
-        let startX = 0;
-        const ts = (e) => (startX = e.touches[0].clientX);
-        const te = (e) => {
-            const dx = e.changedTouches[0].clientX - startX;
-            if (dx < -30) next();
-            if (dx > 30) prev();
-        };
-        el.addEventListener("touchstart", ts);
-        el.addEventListener("touchend", te);
-        return () => {
-            el.removeEventListener("touchstart", ts);
-            el.removeEventListener("touchend", te);
-        };
-    }, [active, count]);
+  // 터치
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    let startX = 0;
+    const ts = (e) => (startX = e.touches[0].clientX);
+    const te = (e) => {
+      const dx = e.changedTouches[0].clientX - startX;
+      if (dx < -30) next();
+      if (dx > 30) prev();
+    };
+    el.addEventListener("touchstart", ts);
+    el.addEventListener("touchend", te);
+    return () => {
+      el.removeEventListener("touchstart", ts);
+      el.removeEventListener("touchend", te);
+    };
+  }, [prev, next]);
 
-    if (!count) return null;
+  if (!count) return null;
 
-    return (
-        <div className="tarot-wrap" ref={wrapRef}>
-            <button className="nav-btn left" onClick={prev} aria-label="이전">‹</button>
-            <div className="deck">
-                {items.map((it, i) => {
-                    const isActive = i === active;
-                    const offset = i - active;
-                    const abs = Math.abs(offset);
-                    const translateX = offset * 220;
-                    const translateY = Math.min(abs * 8, 24);
-                    const rotate = offset * -2.5;
-                    const scale = 1 - Math.min(abs * 0.08, 0.32);
-                    const zIndex = 100 - abs;
+  return (
+    <div className="tarot-wrap" ref={wrapRef}>
+      <button className="nav-btn left" onClick={prev} aria-label="이전">
+        ‹
+      </button>
+      <div className="deck">
+        {items.map((it, i) => {
+          const isActive = i === active;
+          const offset = i - active;
+          const abs = Math.abs(offset);
+          const translateX = offset * 220;
+          const translateY = Math.min(abs * 8, 24);
+          const rotate = offset * -2.5;
+          const scale = 1 - Math.min(abs * 0.08, 0.32);
+          const zIndex = 100 - abs;
 
-                    return (
-                        <div
-                            key={it.id ?? i}
-                            style={{
-                                position: "absolute",
-                                transform: `translateX(${translateX}px) translateY(${translateY}px) rotate(${rotate}deg) scale(${scale})`,
-                                zIndex,
-                                opacity: 1 - Math.min(abs * 0.15, 0.45),
-                                transition: "transform 0.3s ease, opacity 0.3s ease",
-                            }}
-                            onClick={() => {
-                                // 옆 카드 클릭 시: 포커스만 이동 (뒤집지 않음)
-                                if (!isActive) focusTo(i);
-                            }}
-                        >
-                            <FlippableGenreCard
-                                item={it}
-                                isActive={isActive}
-                                flipped={isActive && flipped}
-                                onFlip={() => setFlipped(true)}
-                                onCancel={() => setFlipped(false)}
-                                onSubmit={handleStartFromForm}
-                            />
-                            {busy && (
-                                <div className="upload-indicator">업로드 중…{/* (선택) {Math.round(progress*100)}% */}</div>
-                            )}
-                        </div>
-                    );
-                })}
+          return (
+            <div
+              key={it.id ?? i}
+              style={{
+                position: "absolute",
+                transform: `translateX(${translateX}px) translateY(${translateY}px) rotate(${rotate}deg) scale(${scale})`,
+                zIndex,
+                opacity: 1 - Math.min(abs * 0.15, 0.45),
+                transition: "transform 0.3s ease, opacity 0.3s ease",
+              }}
+              onClick={() => {
+                // 옆 카드 클릭 시: 포커스만 이동 (뒤집지 않음)
+                if (!isActive) focusTo(i);
+              }}
+            >
+              <FlippableGenreCard
+                item={it}
+                isActive={isActive}
+                flipped={isActive && flipped}
+                onFlip={() => setFlipped(true)}
+                onCancel={() => setFlipped(false)}
+                onSubmit={handleStartFromForm}
+              />
+
+              {busy && (
+                <div className="upload-indicator">
+                  업로드 및 변환 중…
+                  {/* 진행률 쓰고 싶으면 {Math.round(progress * 100)}% */}
+                </div>
+              )}
             </div>
-            <button className="nav-btn right" onClick={next} aria-label="다음">›</button>
-        </div>
-    );
+          );
+        })}
+      </div>
+      <button className="nav-btn right" onClick={next} aria-label="다음">
+        ›
+      </button>
+    </div>
+  );
 }
