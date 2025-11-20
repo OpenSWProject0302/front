@@ -3,21 +3,30 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import FlippableGenreCard from "./FlippableGenreCard";
 import "./TarotDeck.css";
 import { presignUpload, putToS3 } from "../api/uploads";
-// ❌ 이제 processDrums 는 사용하지 않음
-// import { processDrums } from "../api/drums";
 
 export default function TarotDeck({ items = [], onSelect }) {
   const [active, setActive] = useState(0);          // 중앙 카드 index
   const [flipped, setFlipped] = useState(false);    // 단 하나만 뒤집힘
   const wrapRef = useRef(null);
 
-  const [busy, setBusy] = useState(false);
+  const [, setBusy] = useState(false);
   // const [progress, setProgress] = useState(0);
+
+  // 🔔 토스트 & 에러 모달 상태
+  const [showToast, setShowToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   const count = items.length;
 
   // index 순환
-  const wrap = useCallback((i) => ((i % count) + count) % count, [count]);
+  const wrap = useCallback(
+    (i) => {
+      if (!count) return 0;
+      return ((i % count) + count) % count;
+    },
+    [count]
+  );
 
   const focusTo = useCallback(
     (i) => {
@@ -35,6 +44,12 @@ export default function TarotDeck({ items = [], onSelect }) {
     try {
       if (!form.file) throw new Error("파일을 선택해 주세요.");
       setBusy(true);
+
+      // 🔔 변환 시작 토스트 표시
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 4000); // 4초 후 자동 사라짐
 
       // MIME 타입 보정
       let fileType = form.file.type;
@@ -55,9 +70,22 @@ export default function TarotDeck({ items = [], onSelect }) {
       console.log("S3 업로드 완료. key:", key);
 
       // 3) 드럼 파이프라인 실행 (/api/drums/process)
-      //    폼 안에 들어온 값 기준으로 매핑
-      const genre =
-        form.genre || form.title || form.genreName || "Rock";
+      let genre = form.genre || form.title || form.genreName;
+
+      // 🔥 Pop 선택 시 세부 장르(subGenre)를 붙여서 최종 장르 구성
+      if (
+        (genre === "Pop" || form.title === "Pop" || form.genre === "Pop") &&
+        form.subGenre
+      ) {
+        // 예: Pop Ballad, Pop Rock, ...
+        genre = `Pop ${form.subGenre}`;
+      }
+
+      if (!genre) {
+        console.warn("장르 정보가 비어 있어 기본값 Rock 사용:", form);
+        genre = "Rock";
+      }
+
       const tempo = Number(form.bpm) || 160;
       const level = form.difficulty || "Normal"; // "Easy" | "Normal" | "Hard"
 
@@ -68,7 +96,6 @@ export default function TarotDeck({ items = [], onSelect }) {
         level,
       });
 
-      // 🔥 콘솔에서 테스트했던 방식 그대로 사용
       const res = await fetch("http://127.0.0.1:8000/api/drums/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,14 +121,17 @@ export default function TarotDeck({ items = [], onSelect }) {
       console.log("=== DRUM PROCESS RESULT ===");
       console.log(data);
 
-      // 부모로 응답 전달하고 싶으면 여기서 넘겨줌
+      // 부모로 응답 전달 (Home에서 모달 띄움)
       onSelect?.({ ...form, inputKey: key, job: data });
 
       setFlipped(false);
-      alert("업로드 및 변환 요청이 완료되었습니다!");
+      // ✅ 성공 시에는 alert 없이 Home 쪽 모달만 사용
     } catch (e) {
       console.error(e);
-      alert(e.message || "업로드/변환 중 오류가 발생했습니다.");
+
+      // ❌ 실패 시 에러 모달 표시
+      setErrorMessage(e.message || "업로드/변환 중 오류가 발생했습니다.");
+      setShowErrorModal(true);
     } finally {
       setBusy(false);
       // setProgress(0);
@@ -124,7 +154,8 @@ export default function TarotDeck({ items = [], onSelect }) {
     const el = wrapRef.current;
     if (!el) return;
     const onWheel = (e) => {
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) (e.deltaX > 0 ? next() : prev());
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY))
+        e.deltaX > 0 ? next() : prev();
     };
     el.addEventListener("wheel", onWheel, { passive: true });
     return () => el.removeEventListener("wheel", onWheel);
@@ -152,58 +183,94 @@ export default function TarotDeck({ items = [], onSelect }) {
   if (!count) return null;
 
   return (
-    <div className="tarot-wrap" ref={wrapRef}>
-      <button className="nav-btn left" onClick={prev} aria-label="이전">
-        ‹
-      </button>
-      <div className="deck">
-        {items.map((it, i) => {
-          const isActive = i === active;
-          const offset = i - active;
-          const abs = Math.abs(offset);
-          const translateX = offset * 220;
-          const translateY = Math.min(abs * 8, 24);
-          const rotate = offset * -2.5;
-          const scale = 1 - Math.min(abs * 0.08, 0.32);
-          const zIndex = 100 - abs;
+    <>
+      {/* 🟦 변환 시작 토스트 (작게 하단에 표시) */}
+      {showToast && (
+        <div className="tarot-toast">
+          <div className="tarot-toast-title">요청이 전송되었습니다.</div>
+          <div className="tarot-toast-body">
+            업로드 및 변환 작업이 시작되었습니다.
+            <br />
+            파일 길이에 따라 최대 3~5분 정도 소요될 수 있습니다.
+          </div>
+        </div>
+      )}
 
-          return (
-            <div
-              key={it.id ?? i}
-              style={{
-                position: "absolute",
-                transform: `translateX(${translateX}px) translateY(${translateY}px) rotate(${rotate}deg) scale(${scale})`,
-                zIndex,
-                opacity: 1 - Math.min(abs * 0.15, 0.45),
-                transition: "transform 0.3s ease, opacity 0.3s ease",
-              }}
-              onClick={() => {
-                // 옆 카드 클릭 시: 포커스만 이동 (뒤집지 않음)
-                if (!isActive) focusTo(i);
-              }}
+      {/* 🟥 에러 모달 */}
+      {showErrorModal && (
+        <div
+          className="tarot-error-backdrop"
+          onClick={() => setShowErrorModal(false)}
+        >
+          <div
+            className="tarot-error-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="tarot-error-title">변환 중 오류가 발생했습니다</h2>
+            <p className="tarot-error-message">{errorMessage}</p>
+            <button
+              type="button"
+              className="tarot-error-close-btn"
+              onClick={() => setShowErrorModal(false)}
             >
-              <FlippableGenreCard
-                item={it}
-                isActive={isActive}
-                flipped={isActive && flipped}
-                onFlip={() => setFlipped(true)}
-                onCancel={() => setFlipped(false)}
-                onSubmit={handleStartFromForm}
-              />
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
 
-              {busy && (
-                <div className="upload-indicator">
-                  업로드 및 변환 중…
-                  {/* 진행률 쓰고 싶으면 {Math.round(progress * 100)}% */}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="tarot-wrap" ref={wrapRef}>
+        <button className="nav-btn left" onClick={prev} aria-label="이전">
+          ‹
+        </button>
+        <div className="deck">
+          {items.map((it, i) => {
+            const isActive = i === active;
+            const offset = i - active;
+            const abs = Math.abs(offset);
+            const translateX = offset * 220;
+            const translateY = Math.min(abs * 8, 24);
+            const rotate = offset * -2.5;
+            const scale = 1 - Math.min(abs * 0.08, 0.32);
+            const zIndex = 100 - abs;
+
+            return (
+              <div
+                key={it.id ?? i}
+                style={{
+                  position: "absolute",
+                  transform: `translateX(${translateX}px) translateY(${translateY}px) rotate(${rotate}deg) scale(${scale})`,
+                  zIndex,
+                  opacity: 1 - Math.min(abs * 0.15, 0.45),
+                  transition: "transform 0.3s ease, opacity 0.3s ease",
+                }}
+                onClick={() => {
+                  // 옆 카드 클릭 시: 포커스만 이동 (뒤집지 않음)
+                  if (!isActive) focusTo(i);
+                }}
+              >
+                <FlippableGenreCard
+                  item={it}
+                  isActive={isActive}
+                  flipped={isActive && flipped}
+                  onFlip={() => setFlipped(true)}
+                  onCancel={() => setFlipped(false)}
+                  // 🔥 현재 카드(it)의 장르를 form에 함께 전달
+                  onSubmit={(form) =>
+                    handleStartFromForm({
+                      ...form,
+                      genre: it.genre ?? it.title ?? it.id,
+                    })
+                  }
+                />
+              </div>
+            );
+          })}
+        </div>
+        <button className="nav-btn right" onClick={next} aria-label="다음">
+          ›
+        </button>
       </div>
-      <button className="nav-btn right" onClick={next} aria-label="다음">
-        ›
-      </button>
-    </div>
+    </>
   );
 }

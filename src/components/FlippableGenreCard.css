@@ -1,7 +1,7 @@
 /* 카드와 앞/뒤면 공통 */
 .flip-card {
-  width: 230px; /* 앞면 카드와 동일한 너비로 맞추세요 */
-  height: 300px;
+  width: 300px;
+  height: 400px;
   perspective: 1200px;
 }
 .flip-inner {
@@ -101,4 +101,31 @@
 .btn.ghost {
   background: #f1f5f9;
   color: #758da3;
+}
+
+/* Pop 세부 장르 선택 영역 */
+.genre-sub-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.genre-sub-label {
+  font-size: 13px;
+  color: #475569;
+}
+
+.genre-sub-select {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+}
+
+.options-title-outside {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px; /* 제목과 카드 간 간격 */
 }
