@@ -1,17 +1,9 @@
 // src/components/FlippableGenreCard.jsx
+import { useState } from "react";
 import GenreCard from "./GenreCard";
 import OptionsForm from "./OptionsForm";
 import "./FlippableGenreCard.css";
 
-/**
- * props:
- *  - item
- *  - isActive: 현재 중앙 카드인지
- *  - flipped: 현재 뒤집혀 있는지 (제어형)
- *  - onFlip(): 앞면 클릭 시 호출 (isActive일 때만 쓰기)
- *  - onCancel(): 뒷면에서 취소 클릭
- *  - onSubmit(payload)
- */
 export default function FlippableGenreCard({
     item,
     isActive,
@@ -20,6 +12,21 @@ export default function FlippableGenreCard({
     onCancel,
     onSubmit,
 }) {
+    const [subGenre, setSubGenre] = useState("");
+
+    const handleFormSubmit = (formValues) => {
+        if (item.title === "Pop" && !subGenre) {
+            alert("Pop 세부 장르를 선택해 주세요.");
+            return;
+        }
+
+        onSubmit?.({
+            ...formValues,
+            subGenre,
+            title: formValues.title ?? item.title,
+        });
+    };
+
     return (
         <div className={`flip-card ${flipped ? "is-flipped" : ""}`}>
             <div className="flip-inner">
@@ -27,9 +34,8 @@ export default function FlippableGenreCard({
                 <div
                     className="flip-face flip-front"
                     onClick={() => {
-                        if (isActive) onFlip?.(); // 중앙일 때만 뒤집기
+                        if (isActive) onFlip?.();
                     }}
-                    // 중앙이 아니면 클릭 불가처럼 보이게 커서 표시만 변경(선택)
                     style={{ cursor: isActive ? "pointer" : "default" }}
                 >
                     <GenreCard title={item.title} image={item.image} onClick={() => { }} />
@@ -40,8 +46,27 @@ export default function FlippableGenreCard({
                     <OptionsForm
                         defaultValues={{ genreId: item.id, title: item.title }}
                         onCancel={onCancel}
-                        onSubmit={onSubmit}
-                    />
+                        onSubmit={handleFormSubmit}
+                    >
+                        {/* 🔥 Pop일 때만 카드 안 아래쪽에 세부 장르 한 줄 추가 */}
+                        {item.title === "Pop" && (
+                            <div className="genre-sub-field">
+                                <label className="genre-sub-label">세부 장르</label>
+                                <select
+                                    className="genre-sub-select"
+                                    value={subGenre}
+                                    onChange={(e) => setSubGenre(e.target.value)}
+                                >
+                                    <option value="">선택해주세요</option>
+                                    <option value="Ballad">Pop Ballad</option>
+                                    <option value="Rock">Pop Rock</option>
+                                    <option value="Funk">Pop Funk</option>
+                                    <option value="R&B">Pop R&amp;B</option>
+                                    <option value="Disco">Pop Disco</option>
+                                </select>
+                            </div>
+                        )}
+                    </OptionsForm>
                 </div>
             </div>
         </div>

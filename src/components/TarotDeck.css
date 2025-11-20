@@ -79,3 +79,127 @@
 .nav-btn.right {
   right: 12px;
 }
+
+
+/* 🔔 변환 시작 토스트 */
+.tarot-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.92); /* 거의 검은 남색 */
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  font-size: 13px;
+  z-index: 1000;
+  text-align: center;
+  max-width: 90vw;
+}
+
+.tarot-toast-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tarot-toast-body {
+  font-size: 12px;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* 🟥 에러 모달 배경 */
+.tarot-error-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+
+/* 🟥 에러 모달 카드 */
+.tarot-error-modal {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  width: 360px;
+  max-width: 90vw;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.tarot-error-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.tarot-error-message {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+/* 🟥 에러 닫기 버튼 */
+.tarot-error-close-btn {
+  margin-top: 16px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: #64748b;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tarot-error-close-btn:hover {
+  background: #4b5f73;
+}
+
+
+/* 라벨을 relative로 설정해서 툴팁 위치 기준 잡기 */
+.difficulty-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ? 아이콘 */
+.tooltip-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  height: 18px;
+  font-size: 13px;
+  font-weight: bold;
+  border-radius: 50%;
+  background: #d8e1eb;
+  color: #333;
+  cursor: pointer;
+}
+
+/* 기본 툴팁 숨김 */
+.tooltip-content {
+  display: none;
+  position: absolute;
+  top: 32px; /* 라벨 아래 */
+  left: 0;
+  width: 260px;
+  background: white;
+  padding: 12px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  font-size: 13px;
+  line-height: 1.4;
+  z-index: 999;
+}
+
+/* 아이콘 위에 마우스 올리면 툴팁 표시 */
+.difficulty-label:hover .tooltip-content {
+  display: block;
+}
