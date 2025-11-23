@@ -17,6 +17,9 @@ export default function TarotDeck({ items = [], onSelect }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [showErrorModal, setShowErrorModal] = useState(false);
 
+  // 🔥 변환 중 전체 로딩 오버레이 상태
+  const [loading, setLoading] = useState(false);
+
   const count = items.length;
 
   // index 순환
@@ -39,11 +42,12 @@ export default function TarotDeck({ items = [], onSelect }) {
   const prev = useCallback(() => focusTo(active - 1), [focusTo, active]);
   const next = useCallback(() => focusTo(active + 1), [focusTo, active]);
 
-  // ✅ 2번 + 3번 API까지 모두 처리하는 함수
+  // ✅ presign → S3 업로드 → drums/process 호출까지 처리
   async function handleStartFromForm(form) {
     try {
       if (!form.file) throw new Error("파일을 선택해 주세요.");
       setBusy(true);
+      setLoading(true);   // 🔥 로딩 오버레이 ON
 
       // 🔔 변환 시작 토스트 표시
       setShowToast(true);
@@ -72,13 +76,13 @@ export default function TarotDeck({ items = [], onSelect }) {
       // 3) 드럼 파이프라인 실행 (/api/drums/process)
       let genre = form.genre || form.title || form.genreName;
 
-      // 🔥 Pop 선택 시 세부 장르(subGenre)를 붙여서 최종 장르 구성
+      // 🔥 Pop 선택 시 세부 장르(subGenre)를 최종 장르로 사용
       if (
         (genre === "Pop" || form.title === "Pop" || form.genre === "Pop") &&
         form.subGenre
       ) {
-        // 예: Pop Ballad, Pop Rock, ...
-        genre = `Pop ${form.subGenre}`;
+        // 백엔드에서 subGenre 자체("Pop Ballad" 같은 문자열)를 기대한다면 그대로 사용
+        genre = `${form.subGenre}`;
       }
 
       if (!genre) {
@@ -89,23 +93,20 @@ export default function TarotDeck({ items = [], onSelect }) {
       const tempo = Number(form.bpm) || 160;
       const level = form.difficulty || "Normal"; // "Easy" | "Normal" | "Hard"
 
-      console.log("drums/process 요청 payload:", {
+      const payload = {
         inputKey: key,
         genre,
         tempo,
         level,
-      });
+      };
 
-      const res = await fetch("http://127.0.0.1:8000/api/drums/process", {
+      console.log("drums/process 요청 payload:", payload);
+
+      const res = await fetch("/api/drums/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          inputKey: key,
-          genre,
-          tempo,
-          level,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json().catch(async () => {
@@ -134,6 +135,7 @@ export default function TarotDeck({ items = [], onSelect }) {
       setShowErrorModal(true);
     } finally {
       setBusy(false);
+      setLoading(false);   // 🔥 로딩 오버레이 OFF
       // setProgress(0);
     }
   }
@@ -184,6 +186,15 @@ export default function TarotDeck({ items = [], onSelect }) {
 
   return (
     <>
+      {/* 🔵 전체 로딩 오버레이 */}
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner" />
+          <p className="loading-text">음원을 분석하고 있어요...</p>
+          <p className="loading-sub">최대 3~5분 정도 소요될 수 있습니다.</p>
+        </div>
+      )}
+
       {/* 🟦 변환 시작 토스트 (작게 하단에 표시) */}
       {showToast && (
         <div className="tarot-toast">
