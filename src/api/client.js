@@ -1,4 +1,4 @@
-const BASE_URL = ""; // 같은 도메인이면 빈 문자열, 프록시/별도 도메인이면 'https://api.example.com'
+const BASE_URL = "http://15.164.214.82:8000";
 
 export async function fetchJSON(
   path,
