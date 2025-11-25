@@ -4,7 +4,7 @@ import TarotDeck from "../components/TarotDeck";
 import ImgDefault from "../image/genre_default.png";
 
 export default function Home() {
-  // 🎯 드럼 변환 결과 저장용 상태
+  // 🎯 드럼 변환 결과(DrumJob 조회 응답) 저장용 상태
   const [result, setResult] = useState(null);
   // 🎯 모달 열림/닫힘 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,15 +48,15 @@ export default function Home() {
       <TarotDeck
         items={genres}
         onSelect={(payload) => {
-          // TarotDeck에서 onSelect?.({ ...form, inputKey: key, job: data });
+          // TarotDeck에서 onSelect?.({ ...form, inputKey: key, job });
           console.log("홈에서 받은 데이터:", payload);
-          setResult(payload.job);     // 🎯 drums/process 전체 응답 저장
-          setIsModalOpen(true);       // 🔥 변환 완료 시 모달 열기
+          setResult(payload.job); // 🎯 DrumJob 조회 응답 전체 저장
+          setIsModalOpen(true); // 🔥 변환 완료 시 모달 열기
         }}
       />
 
       {/* 🎉 변환 완료 모달 (팝업) */}
-      {isModalOpen && result && result.results && (
+      {isModalOpen && result && (
         <div
           style={backdropStyle}
           onClick={() => setIsModalOpen(false)} // 바깥 클릭 시 닫기
@@ -69,7 +69,7 @@ export default function Home() {
               변환이 완료되었습니다!
             </h2>
             <p style={{ margin: 0, color: "#64748B", fontSize: 14 }}>
-              원하는 파일을 선택해서 다운로드하세요.
+              아래 버튼을 눌러 결과 파일을 다운로드하세요.
             </p>
 
             <div
@@ -80,43 +80,17 @@ export default function Home() {
                 gap: 10,
               }}
             >
-              {result.results.pdf && (
-                <a
-                  href={result.results.pdf.url}
-                  download={result.results.pdf.filename}
-                  style={btnStyle}
-                >
+              {/* 백엔드에서 pdf_key에 S3 전체 URL을 넣어준다고 가정 */}
+              {result.pdfKey && (
+                <a href={result.pdfKey} style={btnStyle}>
                   악보(PDF) 다운로드
                 </a>
               )}
 
-              {result.results.midi && (
-                <a
-                  href={result.results.midi.url}
-                  download={result.results.midi.filename}
-                  style={btnStyle}
-                >
-                  MIDI 다운로드
-                </a>
-              )}
-
-              {result.results.drum_audio && (
-                <a
-                  href={result.results.drum_audio.url}
-                  download={result.results.drum_audio.filename}
-                  style={btnStyle}
-                >
-                  드럼만 오디오 다운로드
-                </a>
-              )}
-
-              {result.results.mix_audio && (
-                <a
-                  href={result.results.mix_audio.url}
-                  download={result.results.mix_audio.filename}
-                  style={btnStyle}
-                >
-                  믹스 오디오 다운로드
+              {/* 오디오 결과 (예: 드럼만 오디오 or 믹스 오디오) */}
+              {result.audioKey && (
+                <a href={result.audioKey} style={btnStyle}>
+                  오디오 파일 다운로드
                 </a>
               )}
             </div>
@@ -145,6 +119,7 @@ const btnStyle = {
   color: "white",
   fontWeight: 600,
   fontSize: 14,
+  textAlign: "center",
   transition: "background 0.2s, transform 0.1s",
 };
 
