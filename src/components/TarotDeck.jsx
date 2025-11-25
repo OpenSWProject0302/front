@@ -115,7 +115,7 @@ export default function TarotDeck({ items = [], onSelect }) {
 
       // 5) Job 상태 폴링
       const pollIntervalMs = 5000;      // 5초 간격
-      const maxAttempts = 240;          // 180회 → 180 * 5초 = 900초 (15분)
+      const maxAttempts = 720;          // 180회 → 180 * 5초 = 900초 (15분)
 
       let job = null;
 
