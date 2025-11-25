@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import FlippableGenreCard from "./FlippableGenreCard";
 import "./TarotDeck.css";
 import { presignUpload, putToS3 } from "../api/uploads";
+import { fetchJSON } from "../api/client";
 
 export default function TarotDeck({ items = [], onSelect }) {
   const [active, setActive] = useState(0);          // 중앙 카드 index
@@ -102,19 +103,11 @@ export default function TarotDeck({ items = [], onSelect }) {
 
       console.log("drums/process 요청 payload:", payload);
 
-      const res = await fetch("/api/drums/process", {
+      const data = await fetchJSON("/api/drums/process", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+        body: payload,
       });
-
-      const data = await res.json().catch(async () => {
-        const txt = await res.text();
-        throw new Error(`응답 JSON 파싱 실패: ${txt}`);
-      });
-
-      if (!res.ok || data.ok === false) {
+      if (data?.ok === false) {
         console.error("drums/process 실패 응답:", data);
         throw new Error(data.message || "드럼 변환 중 오류가 발생했습니다.");
       }
