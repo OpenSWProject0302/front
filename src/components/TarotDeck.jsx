@@ -3,15 +3,14 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import FlippableGenreCard from "./FlippableGenreCard";
 import "./TarotDeck.css";
 import { presignUpload, putToS3 } from "../api/uploads";
-import { fetchJSON } from "../api/client";
+import { startDrumJob, getDrumJob } from "../api/drums";
 
 export default function TarotDeck({ items = [], onSelect }) {
-  const [active, setActive] = useState(0);          // 중앙 카드 index
-  const [flipped, setFlipped] = useState(false);    // 단 하나만 뒤집힘
+  const [active, setActive] = useState(0); // 중앙 카드 index
+  const [flipped, setFlipped] = useState(false); // 단 하나만 뒤집힘
   const wrapRef = useRef(null);
 
   const [, setBusy] = useState(false);
-  // const [progress, setProgress] = useState(0);
 
   // 🔔 토스트 & 에러 모달 상태
   const [showToast, setShowToast] = useState(false);
@@ -43,12 +42,12 @@ export default function TarotDeck({ items = [], onSelect }) {
   const prev = useCallback(() => focusTo(active - 1), [focusTo, active]);
   const next = useCallback(() => focusTo(active + 1), [focusTo, active]);
 
-  // ✅ presign → S3 업로드 → drums/process 호출까지 처리
+  // ✅ presign → S3 업로드 → jobs/drums/start → jobs/drums/:id 폴링까지 처리
   async function handleStartFromForm(form) {
     try {
       if (!form.file) throw new Error("파일을 선택해 주세요.");
       setBusy(true);
-      setLoading(true);   // 🔥 로딩 오버레이 ON
+      setLoading(true); // 🔥 로딩 오버레이 ON
 
       // 🔔 변환 시작 토스트 표시
       setShowToast(true);
@@ -63,7 +62,7 @@ export default function TarotDeck({ items = [], onSelect }) {
       }
 
       // 1) presign 발급
-      const { ok, uploadUrl, key /* expiresIn */ } = await presignUpload({
+      const { ok, uploadUrl, key } = await presignUpload({
         filename: form.file.name,
         size: form.file.size,
         contentType: fileType,
@@ -74,7 +73,7 @@ export default function TarotDeck({ items = [], onSelect }) {
       await putToS3({ uploadUrl, file: form.file, contentType: fileType });
       console.log("S3 업로드 완료. key:", key);
 
-      // 3) 드럼 파이프라인 실행 (/api/drums/process)
+      // 3) 장르/옵션 정리
       let genre = form.genre || form.title || form.genreName;
 
       // 🔥 Pop 선택 시 세부 장르(subGenre)를 최종 장르로 사용
@@ -82,7 +81,6 @@ export default function TarotDeck({ items = [], onSelect }) {
         (genre === "Pop" || form.title === "Pop" || form.genre === "Pop") &&
         form.subGenre
       ) {
-        // 백엔드에서 subGenre 자체("Pop Ballad" 같은 문자열)를 기대한다면 그대로 사용
         genre = `${form.subGenre}`;
       }
 
@@ -92,7 +90,7 @@ export default function TarotDeck({ items = [], onSelect }) {
       }
 
       const tempo = Number(form.bpm) || 160;
-      const level = form.difficulty || "Normal"; // "Easy" | "Normal" | "Hard"
+      const level = form.difficulty || "Normal"; // "Easy" | "Normal"
 
       const payload = {
         inputKey: key,
@@ -101,25 +99,57 @@ export default function TarotDeck({ items = [], onSelect }) {
         level,
       };
 
-      console.log("drums/process 요청 payload:", payload);
+      console.log("jobs/drums/start 요청 payload:", payload);
 
-      const data = await fetchJSON("/api/drums/process", {
-        method: "POST",
-        body: payload,
-      });
-      if (data?.ok === false) {
-        console.error("drums/process 실패 응답:", data);
-        throw new Error(data.message || "드럼 변환 중 오류가 발생했습니다.");
+      // 4) 드럼 Job 시작
+      const startRes = await startDrumJob(payload);
+      if (startRes?.ok === false) {
+        console.error("drums/start 실패 응답:", startRes);
+        throw new Error(
+          startRes.message || "드럼 변환 Job 생성 중 오류가 발생했습니다."
+        );
       }
 
-      console.log("=== DRUM PROCESS RESULT ===");
-      console.log(data);
+      const jobId = startRes.jobId;
+      console.log("=== DRUM JOB STARTED ===", jobId);
+
+      // 5) Job 상태 폴링
+      const pollIntervalMs = 5000; // 5초 간격
+      const maxAttempts = 60; // 최대 약 5분
+      let job = null;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // 잠깐 대기
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+
+        // 상태 조회
+        job = await getDrumJob(jobId);
+        console.log("Job 상태 조회:", job);
+
+        if (job.status === "DONE") break;
+        if (job.status === "ERROR") {
+          throw new Error(
+            job.errorMessage || "드럼 변환 중 오류가 발생했습니다."
+          );
+        }
+      }
+
+      if (!job) {
+        throw new Error("작업 정보를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      }
+      if (job.status !== "DONE") {
+        throw new Error(
+          "변환 시간이 초과되었습니다. 파일 길이를 줄이거나 다시 시도해 주세요."
+        );
+      }
+
+      console.log("=== DRUM JOB DONE ===");
+      console.log(job);
 
       // 부모로 응답 전달 (Home에서 모달 띄움)
-      onSelect?.({ ...form, inputKey: key, job: data });
+      onSelect?.({ ...form, inputKey: key, job });
 
       setFlipped(false);
-      // ✅ 성공 시에는 alert 없이 Home 쪽 모달만 사용
     } catch (e) {
       console.error(e);
 
@@ -128,8 +158,7 @@ export default function TarotDeck({ items = [], onSelect }) {
       setShowErrorModal(true);
     } finally {
       setBusy(false);
-      setLoading(false);   // 🔥 로딩 오버레이 OFF
-      // setProgress(0);
+      setLoading(false); // 🔥 로딩 오버레이 OFF
     }
   }
 
