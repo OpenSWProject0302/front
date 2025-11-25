@@ -1,4 +1,4 @@
-const BASE_URL = "http://15.164.214.82:8000";
+const BASE_URL = "";
 
 export async function fetchJSON(
   path,
