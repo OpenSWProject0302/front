@@ -114,8 +114,9 @@ export default function TarotDeck({ items = [], onSelect }) {
       console.log("=== DRUM JOB STARTED ===", jobId);
 
       // 5) Job 상태 폴링
-      const pollIntervalMs = 5000; // 5초 간격
-      const maxAttempts = 60; // 최대 약 5분
+      const pollIntervalMs = 5000;      // 5초 간격
+      const maxAttempts = 180;          // 180회 → 180 * 5초 = 900초 (15분)
+
       let job = null;
 
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
