@@ -114,8 +114,8 @@ export default function TarotDeck({ items = [], onSelect }) {
       console.log("=== DRUM JOB STARTED ===", jobId);
 
       // 5) Job 상태 폴링
-      const pollIntervalMs = 5000;      // 5초 간격
-      const maxAttempts = 360;          // 180회 → 180 * 5초 = 900초 (15분)
+      const pollIntervalMs = 5000; // 5초 간격
+      const maxAttempts = 360; // 필요시 조정 (예: 720이면 약 1시간)
 
       let job = null;
 
@@ -136,7 +136,9 @@ export default function TarotDeck({ items = [], onSelect }) {
       }
 
       if (!job) {
-        throw new Error("작업 정보를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        throw new Error(
+          "작업 정보를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요."
+        );
       }
       if (job.status !== "DONE") {
         throw new Error(
@@ -147,8 +149,17 @@ export default function TarotDeck({ items = [], onSelect }) {
       console.log("=== DRUM JOB DONE ===");
       console.log(job);
 
-      // 부모로 응답 전달 (Home에서 모달 띄움)
-      onSelect?.({ ...form, inputKey: key, job });
+      // 부모로 응답 전달 (Home에서 모달/다운로드 처리)
+      // 🔥 백엔드에서 내려준 4가지 presigned URL을 평탄화해서 같이 넘겨줌
+      onSelect?.({
+        ...form,
+        inputKey: key,
+        job, // 원본 전체 응답
+        pdfUrl: job.pdfKey, // 악보(PDF)
+        audioUrl: job.audioKey, // 믹스 오디오
+        midiUrl: job.midiKey, // MIDI
+        guideUrl: job.guideKey, // 가이드 오디오
+      });
 
       setFlipped(false);
     } catch (e) {
