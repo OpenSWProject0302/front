@@ -2,26 +2,54 @@
 import { useState } from "react";
 import TarotDeck from "../components/TarotDeck";
 import ImgDefault from "../image/genre_default.png";
+import ImgBallad from "../image/Ballad.jpg";
+import ImgBlues from "../image/Blues.jpg";
+import ImgDisco from "../image/Disco.jpg";
+import ImgFunk from "../image/Funk.jpg";
+import ImgJazz from "../image/Jazz.jpg";
+import ImgLatin from "../image/Latin.jpg";
+import ImgRnB from "../image/R&B.jpg";
+import ImgReggae from "../image/Reggae.jpg";
+import ImgRock from "../image/Rock.jpg";
+
 
 export default function Home() {
-  // 🎯 드럼 변환 결과(DrumJob 조회 응답) 저장용 상태
+  // 🎯 드럼 변환 결과 전체(payload) 저장용 상태
   const [result, setResult] = useState(null);
   // 🎯 모달 열림/닫힘 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // 공통 다운로드 함수: 새 탭 없이 바로 다운로드 시도
+  const triggerDownload = (url, filename) => {
+    if (!url) return;
+    const link = document.createElement("a");
+    link.href = url;
+    // 파일 이름 힌트
+    if (filename) link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const genres = [
-    { id: 1, title: "Ballad", image: ImgDefault },
-    { id: 2, title: "Blues", image: ImgDefault },
-    { id: 3, title: "Jazz", image: ImgDefault },
-    { id: 4, title: "R&B", image: ImgDefault },
-    { id: 5, title: "Funk", image: ImgDefault },
-    { id: 6, title: "Rock", image: ImgDefault },
-    { id: 7, title: "Disco", image: ImgDefault },
-    { id: 8, title: "Reggae", image: ImgDefault },
-    { id: 9, title: "Latin", image: ImgDefault },
+    { id: 1, title: "Ballad", image: ImgBallad },
+    { id: 2, title: "Blues", image: ImgBlues },
+    { id: 3, title: "Jazz", image: ImgJazz },
+    { id: 4, title: "R&B", image: ImgRnB },
+    { id: 5, title: "Funk", image: ImgFunk },
+    { id: 6, title: "Rock", image: ImgRock },
+    { id: 7, title: "Disco", image: ImgDisco },
+    { id: 8, title: "Reggae", image: ImgReggae },
+    { id: 9, title: "Latin", image: ImgLatin },
     { id: 10, title: "Pop", image: ImgDefault },
     // …필요만큼 추가
   ];
+
+  // result 안에서 실제 링크 가져오기 (혹시 모를 호환용 fallback도 같이)
+  const pdfLink = result?.pdfUrl || result?.pdfKey || result?.job?.pdfKey;
+  const audioLink = result?.audioUrl || result?.audioKey || result?.job?.audioKey;
+  const midiLink = result?.midiUrl || result?.midiKey || result?.job?.midiKey;
+  const guideLink = result?.guideUrl || result?.guideKey || result?.job?.guideKey;
 
   return (
     <div
@@ -48,10 +76,10 @@ export default function Home() {
       <TarotDeck
         items={genres}
         onSelect={(payload) => {
-          // TarotDeck에서 onSelect?.({ ...form, inputKey: key, job });
+          // TarotDeck에서 onSelect?.({ ...form, inputKey: key, job, pdfUrl, audioUrl, midiUrl, guideUrl });
           console.log("홈에서 받은 데이터:", payload);
-          setResult(payload.job); // 🎯 DrumJob 조회 응답 전체 저장
-          setIsModalOpen(true); // 🔥 변환 완료 시 모달 열기
+          setResult(payload);      // 🎯 전체 payload 저장
+          setIsModalOpen(true);    // 🔥 변환 완료 시 모달 열기
         }}
       />
 
@@ -80,18 +108,48 @@ export default function Home() {
                 gap: 10,
               }}
             >
-              {/* 백엔드에서 pdf_key에 S3 전체 URL을 넣어준다고 가정 */}
-              {result.pdfKey && (
-                <a href={result.pdfKey} style={btnStyle}>
+              {/* 🔹 악보 PDF */}
+              {pdfLink && (
+                <button
+                  type="button"
+                  style={btnStyle}
+                  onClick={() => triggerDownload(pdfLink, "easheet_score.pdf")}
+                >
                   악보(PDF) 다운로드
-                </a>
+                </button>
               )}
 
-              {/* 오디오 결과 (예: 드럼만 오디오 or 믹스 오디오) */}
-              {result.audioKey && (
-                <a href={result.audioKey} style={btnStyle}>
+              {/* 🔹 MIDI 파일 */}
+              {midiLink && (
+                <button
+                  type="button"
+                  style={btnStyle}
+                  onClick={() => triggerDownload(midiLink, "easheet_drums.mid")}
+                >
+                  MIDI 파일 다운로드
+                </button>
+              )}
+
+              {/* 🔹 가이드 오디오 (드럼만) */}
+              {guideLink && (
+                <button
+                  type="button"
+                  style={btnStyle}
+                  onClick={() => triggerDownload(guideLink, "easheet_guide.wav")}
+                >
+                  가이드 오디오 다운로드
+                </button>
+              )}
+
+              {/* 🔹 믹스 오디오 (최종) */}
+              {audioLink && (
+                <button
+                  type="button"
+                  style={btnStyle}
+                  onClick={() => triggerDownload(audioLink, "easheet_mix.wav")}
+                >
                   오디오 파일 다운로드
-                </a>
+                </button>
               )}
             </div>
 
@@ -121,6 +179,8 @@ const btnStyle = {
   fontSize: 14,
   textAlign: "center",
   transition: "background 0.2s, transform 0.1s",
+  border: "none",
+  cursor: "pointer",
 };
 
 // 화면 전체를 덮는 어두운 배경
