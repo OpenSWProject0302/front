@@ -11,6 +11,7 @@ import ImgLatin from "../image/Latin.jpg";
 import ImgRnB from "../image/R&B.jpg";
 import ImgReggae from "../image/Reggae.jpg";
 import ImgRock from "../image/Rock.jpg";
+import ImgPop from "../image/Pop.jpg";
 
 
 export default function Home() {
@@ -41,7 +42,7 @@ export default function Home() {
     { id: 7, title: "Disco", image: ImgDisco },
     { id: 8, title: "Reggae", image: ImgReggae },
     { id: 9, title: "Latin", image: ImgLatin },
-    { id: 10, title: "Pop", image: ImgDefault },
+    { id: 10, title: "Pop", image: ImgPop },
     // …필요만큼 추가
   ];
 
