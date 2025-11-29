@@ -8,7 +8,7 @@ export async function fetchJSON(
     method,
     headers: { "Content-Type": "application/json", ...headers },
     body: body ? JSON.stringify(body) : undefined,
-    credentials: "include", // ✅ 쿠키 주고받기
+    credentials: "include", // 쿠키 주고받기
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;

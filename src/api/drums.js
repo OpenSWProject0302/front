@@ -1,4 +1,3 @@
-// src/api/drums.js
 import { fetchJSON } from "./client";
 
 // 1) 드럼 Job 시작: POST /api/jobs/drums/start

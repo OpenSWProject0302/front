@@ -1,4 +1,3 @@
-// src/pages/home.jsx
 import { useState } from "react";
 import TarotDeck from "../components/TarotDeck";
 import ImgDefault from "../image/genre_default.png";
@@ -15,9 +14,9 @@ import ImgPop from "../image/Pop.jpg";
 
 
 export default function Home() {
-  // 🎯 드럼 변환 결과 전체(payload) 저장용 상태
+  // 드럼 변환 결과 전체(payload) 저장용 상태
   const [result, setResult] = useState(null);
-  // 🎯 모달 열림/닫힘 상태
+  // 모달 열림/닫힘 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 공통 다운로드 함수: 새 탭 없이 바로 다운로드 시도
@@ -43,10 +42,9 @@ export default function Home() {
     { id: 8, title: "Reggae", image: ImgReggae },
     { id: 9, title: "Latin", image: ImgLatin },
     { id: 10, title: "Pop", image: ImgPop },
-    // …필요만큼 추가
   ];
 
-  // result 안에서 실제 링크 가져오기 (혹시 모를 호환용 fallback도 같이)
+  // result 안에서 실제 링크 가져오기 
   const pdfLink = result?.pdfUrl || result?.pdfKey || result?.job?.pdfKey;
   const audioLink = result?.audioUrl || result?.audioKey || result?.job?.audioKey;
   const midiLink = result?.midiUrl || result?.midiKey || result?.job?.midiKey;
@@ -77,14 +75,13 @@ export default function Home() {
       <TarotDeck
         items={genres}
         onSelect={(payload) => {
-          // TarotDeck에서 onSelect?.({ ...form, inputKey: key, job, pdfUrl, audioUrl, midiUrl, guideUrl });
           console.log("홈에서 받은 데이터:", payload);
-          setResult(payload);      // 🎯 전체 payload 저장
-          setIsModalOpen(true);    // 🔥 변환 완료 시 모달 열기
+          setResult(payload);      // 전체 payload 저장
+          setIsModalOpen(true);    // 변환 완료 시 모달 열기
         }}
       />
 
-      {/* 🎉 변환 완료 모달 (팝업) */}
+      {/* 변환 완료 모달 (팝업) */}
       {isModalOpen && result && (
         <div
           style={backdropStyle}
@@ -109,7 +106,7 @@ export default function Home() {
                 gap: 10,
               }}
             >
-              {/* 🔹 악보 PDF */}
+              {/* 악보 PDF */}
               {pdfLink && (
                 <button
                   type="button"
@@ -120,7 +117,7 @@ export default function Home() {
                 </button>
               )}
 
-              {/* 🔹 MIDI 파일 */}
+              {/* MIDI 파일 */}
               {midiLink && (
                 <button
                   type="button"
@@ -131,7 +128,7 @@ export default function Home() {
                 </button>
               )}
 
-              {/* 🔹 가이드 오디오 (드럼만) */}
+              {/* 가이드 오디오 (드럼만) */}
               {guideLink && (
                 <button
                   type="button"
@@ -142,7 +139,7 @@ export default function Home() {
                 </button>
               )}
 
-              {/* 🔹 믹스 오디오 (최종) */}
+              {/* 믹스 오디오 (최종) */}
               {audioLink && (
                 <button
                   type="button"
