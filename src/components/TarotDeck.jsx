@@ -12,12 +12,12 @@ export default function TarotDeck({ items = [], onSelect }) {
 
   const [, setBusy] = useState(false);
 
-  // 🔔 토스트 & 에러 모달 상태
+  // 토스트 & 에러 모달 상태
   const [showToast, setShowToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showErrorModal, setShowErrorModal] = useState(false);
 
-  // 🔥 변환 중 전체 로딩 오버레이 상태
+  // 변환 중 전체 로딩 오버레이 상태
   const [loading, setLoading] = useState(false);
 
   const count = items.length;
@@ -42,14 +42,14 @@ export default function TarotDeck({ items = [], onSelect }) {
   const prev = useCallback(() => focusTo(active - 1), [focusTo, active]);
   const next = useCallback(() => focusTo(active + 1), [focusTo, active]);
 
-  // ✅ presign → S3 업로드 → jobs/drums/start → jobs/drums/:id 폴링까지 처리
+  // presign → S3 업로드 → jobs/drums/start → jobs/drums/:id 폴링까지 처리
   async function handleStartFromForm(form) {
     try {
       if (!form.file) throw new Error("파일을 선택해 주세요.");
       setBusy(true);
-      setLoading(true); // 🔥 로딩 오버레이 ON
+      setLoading(true); // 로딩 오버레이 ON
 
-      // 🔔 변환 시작 토스트 표시
+      // 변환 시작 토스트 표시
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
@@ -76,7 +76,7 @@ export default function TarotDeck({ items = [], onSelect }) {
       // 3) 장르/옵션 정리
       let genre = form.genre || form.title || form.genreName;
 
-      // 🔥 Pop 선택 시 세부 장르(subGenre)를 최종 장르로 사용
+      // Pop 선택 시 세부 장르(subGenre)를 최종 장르로 사용
       if (
         (genre === "Pop" || form.title === "Pop" || form.genre === "Pop") &&
         form.subGenre
@@ -150,7 +150,7 @@ export default function TarotDeck({ items = [], onSelect }) {
       console.log(job);
 
       // 부모로 응답 전달 (Home에서 모달/다운로드 처리)
-      // 🔥 백엔드에서 내려준 4가지 presigned URL을 평탄화해서 같이 넘겨줌
+      // 백엔드에서 내려준 4가지 presigned URL을 평탄화해서 같이 넘겨줌
       onSelect?.({
         ...form,
         inputKey: key,
@@ -165,12 +165,12 @@ export default function TarotDeck({ items = [], onSelect }) {
     } catch (e) {
       console.error(e);
 
-      // ❌ 실패 시 에러 모달 표시
+      // 실패 시 에러 모달 표시
       setErrorMessage(e.message || "업로드/변환 중 오류가 발생했습니다.");
       setShowErrorModal(true);
     } finally {
       setBusy(false);
-      setLoading(false); // 🔥 로딩 오버레이 OFF
+      setLoading(false); // 로딩 오버레이 OFF
     }
   }
 
@@ -220,7 +220,7 @@ export default function TarotDeck({ items = [], onSelect }) {
 
   return (
     <>
-      {/* 🔵 전체 로딩 오버레이 */}
+      {/* 전체 로딩 오버레이 */}
       {loading && (
         <div className="loading-overlay">
           <div className="loading-spinner" />
@@ -229,7 +229,7 @@ export default function TarotDeck({ items = [], onSelect }) {
         </div>
       )}
 
-      {/* 🟦 변환 시작 토스트 (작게 하단에 표시) */}
+      {/* 변환 시작 토스트 (작게 하단에 표시) */}
       {showToast && (
         <div className="tarot-toast">
           <div className="tarot-toast-title">요청이 전송되었습니다.</div>
@@ -241,7 +241,7 @@ export default function TarotDeck({ items = [], onSelect }) {
         </div>
       )}
 
-      {/* 🟥 에러 모달 */}
+      {/* 에러 모달 */}
       {showErrorModal && (
         <div
           className="tarot-error-backdrop"
@@ -300,7 +300,7 @@ export default function TarotDeck({ items = [], onSelect }) {
                   flipped={isActive && flipped}
                   onFlip={() => setFlipped(true)}
                   onCancel={() => setFlipped(false)}
-                  // 🔥 현재 카드(it)의 장르를 form에 함께 전달
+                  // 현재 카드(it)의 장르를 form에 함께 전달
                   onSubmit={(form) =>
                     handleStartFromForm({
                       ...form,

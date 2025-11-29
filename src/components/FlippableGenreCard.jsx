@@ -1,4 +1,3 @@
-// src/components/FlippableGenreCard.jsx
 import { useState } from "react";
 import GenreCard from "./GenreCard";
 import OptionsForm from "./OptionsForm";
@@ -48,7 +47,7 @@ export default function FlippableGenreCard({
                         onCancel={onCancel}
                         onSubmit={handleFormSubmit}
                     >
-                        {/* 🔥 Pop일 때만 카드 안 아래쪽에 세부 장르 한 줄 추가 */}
+                        {/* Pop일 때만 카드 안 아래쪽에 세부 장르 한 줄 추가 */}
                         {item.title === "Pop" && (
                             <div className="genre-sub-field">
                                 <label className="genre-sub-label">세부 장르</label>

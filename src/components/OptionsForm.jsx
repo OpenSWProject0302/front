@@ -1,11 +1,10 @@
-// src/components/OptionsForm.jsx
 import { useState } from "react";
 
 export default function OptionsForm({
     defaultValues,
     onSubmit,
     onCancel,
-    children, // 🔥 Pop 세부 장르용
+    children, // Pop 세부 장르용
 }) {
     const [difficulty, setDifficulty] = useState("Easy");
     const [instrument, setInstrument] = useState("drum");
@@ -26,12 +25,12 @@ export default function OptionsForm({
 
     return (
         <form className="options-wrap" onSubmit={submit}>
-            {/* ✅ 카드 안 맨 위에 항상 장르 이름 */}
+            {/* 카드 안 맨 위에 항상 장르 이름 */}
             <h3 className="options-title">
                 {defaultValues?.title || "옵션 선택"}
             </h3>
 
-            {/* 🔥 Pop 전용 세부 장르 필드는 여기: (현재 구조 유지) */}
+            {/* Pop 전용 세부 장르 필드  */}
             {children}
 
             {/* 난이도 */}
