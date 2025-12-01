@@ -23,9 +23,6 @@ Easheet는 사용자가 업로드한 **음원(WAV)을 자동으로 분석하여 
 - **Music21**으로 MIDI → MusicXML 변환  
 - **MuseScore CLI**로 MusicXML → PDF 악보 렌더링
 
-※ 학습·추론 기반 AI 모델을 새로 개발하는 것이 아니라,  
-**공개된 음원 분리 모델(Demucs)을 활용한 오디오 신호 처리 기반 분석 서비스**입니다.
-
 ### ✅ 4. 비동기 작업 처리 (Async Processing)
 - Django REST API + Celery + Redis 조합  
 - `/process` 요청 → Celery Queue에 작업 등록  
