@@ -40,24 +40,24 @@ Easheet는 사용자가 업로드한 **음원(WAV)을 자동으로 분석하여 
 ```mermaid
 flowchart TD
 
-    User["사용자<br/>- 장르 선택<br/>- WAV 업로드"] --> FE["프론트엔드 (React @ Vercel)"]
+    User["사용자<br/>- 장르/난이도 선택<br/>- WAV 업로드"] --> FE["Frontend<br/>(React @ Vercel)"]
 
     FE -->|Presigned URL 요청| BE_Presign["Django API<br/>/api/uploads/presign"]
     BE_Presign --> FE
 
     FE -->|WAV 업로드| S3_Input["AWS S3<br/>Input Bucket"]
 
-    FE -->|드럼 변환 요청<br/>/api/drums/process| BE_Process["Django API<br/>DrumJob 등록"]
+    FE -->|/api/drums/process| BE_Process["Django API<br/>DrumJob 생성(PENDING)"]
 
-    BE_Process -->|작업 메시지 전달| Redis["Redis<br/>(Message Broker)"]
+    BE_Process -->|작업 메시지| Redis["Redis<br/>(Message Broker)"]
 
-    Redis --> Worker["Celery Worker (EC2)<br/>- S3에서 WAV 다운로드<br/>- 분리/분석/변환 수행"]
+    Redis --> Worker["Celery Worker (EC2)<br/>WAV 다운로드·분석·변환"]
 
-    Worker -->|결과 업로드| S3_Output["AWS S3<br/>Output Bucket"]
+    Worker -->|결과 업로드| S3_Output["AWS S3<br/>MIDI / PDF / Guide"]
 
     Worker -->|상태 업데이트| DB["SQLite DB"]
 
-    FE -->|/api/drums/status 폴링| BE_Status["Django API<br/>Job Status 조회"]
+    FE -->|/api/drums/status| BE_Status["Django API<br/>Status 조회"]
     BE_Status --> FE
 ````
 
